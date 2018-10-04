@@ -1,3 +1,10 @@
+/*
+Name - Arpit Sharma
+Email - s.arpit@iitg.ernet.in
+Date - 04/10/2018
+Code - Huffman Coding Algorithm
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -5,6 +12,7 @@
 
 #define SYMBOLS 256
 
+// Binary tree for storing the binary code for specific character
 typedef struct tree
 {
 	char symbol;
@@ -14,6 +22,7 @@ typedef struct tree
 }
 Tree;
 
+// Linked list type collection of Binary trees of all the different characters found in the text
 typedef struct plot
 {
 	Tree* tree;
@@ -21,6 +30,7 @@ typedef struct plot
 }
 Plot;
 
+// Pointer to the forest of trees
 typedef struct forest
 {
 	Plot* first;
@@ -29,6 +39,7 @@ Forest;
 
 typedef enum { READ, WRITE } mode;
 
+// Format for reading a file, containing mode/location of pointer etc.
 typedef struct
 {
     // 8-bit buffer
@@ -64,6 +75,7 @@ typedef struct a
 	struct a* next;
 }compressed;
 
+// All the important functions used in the program
 Forest* mkforest(void);
 Tree* pick(Forest* f);
 bool plant(Forest* f, Tree* t);
@@ -90,7 +102,7 @@ int main(int argc, char* argv[])
 	}
 	
 	FILE* ifp = fopen(argv[1], "r");
-	Huffile* hf = hfopen(argv[2], "r"); 
+	Huffile* hf = hfopen(argv[2], "r");  
 	block *table = (block*)malloc(sizeof(block)*SYMBOLS);
 	compressed* c = create();
 	c->freq = 0;
