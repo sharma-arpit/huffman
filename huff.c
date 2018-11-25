@@ -101,6 +101,7 @@ int main(int argc, char* argv[])
 		printf("Unable to open infile.\n");
 		return 1;
 	}
+
 	// compressed file
 	Huffile* hf = hfopen(argv[2], "w");
 	if (hf == NULL)
@@ -108,6 +109,7 @@ int main(int argc, char* argv[])
 		printf("Unable to open outfile.\n");
 		return 2;
 	}
+	
 	// table contains frequency of every character
 	block *table = (block*)malloc(sizeof(block)*SYMBOLS);
 	if (table == NULL)
@@ -131,7 +133,18 @@ int main(int argc, char* argv[])
 		printf("Could not create Forest.\n");
 		return -1;
 	}
+
+	/*	
+	*	We have an empty hashtable (*table) for all 256 characters
+	*	We have a pointer to the Forest (*f) of plots
+	*	We have a pointer to the input file (*ifp) and output file (*hf)
+	*	We have a head node (*c) of a linked list which will store all 
+		the information for each character required for compression
+	*	Next we will read each character from the input file (*ifp) one 
+		by one and update the frequency of that character in *table
+	*/
 	unsigned char ch; int count=0; char eof;
+
 	while(ch = fgetc(ifp))
 	{
 		eof = ch;
@@ -149,7 +162,12 @@ int main(int argc, char* argv[])
 			return 4;
 		}
 	}
+
+	// Now, we have set the pointer of the file at the start
 	fseek(ifp, 0, SEEK_SET);
+
+	// Counting total number of unique characters present in the file
+	// or in the HASHTABLE (*table)
 
 	for (int i=0; i<SYMBOLS; i++)
 	{
@@ -157,6 +175,7 @@ int main(int argc, char* argv[])
 		count++;
 	}
 
+	// Making a new tree (*node) for each character and planting it into the forest (*f)
 	for (int i=0; i<SYMBOLS; i++)
 	{
 		Tree* node = mktree();
@@ -167,6 +186,19 @@ int main(int argc, char* argv[])
 		}
 		node->symbol = table[i].ch;
 		node->frequency = table[i].freq;
+
+		/*
+		*	We make a tree (*node), store the information and plant it in the forest (*f)
+		*	 _______      ______      ______      ______      ______     
+		*	[_first_] -> [_plot_] -> [_plot_] -> [_plot_] -> [_plot_]
+		*                [_tree_]    [_tree_]    [_tree_]    [_tree_] 
+		*
+		*	tree -> symbol, frequency, left*, right*
+		*	plot -> tree*, next plot*
+		*	f -> first plot*
+		*
+		*	In increasing frequency of occurance 
+		*/
 		if (!(plant(f, node)) && node->frequency)
 		{
 			printf("Not able to plant.\n");
@@ -175,12 +207,18 @@ int main(int argc, char* argv[])
 	}
 
 	// converts the forest into huffman tree forest
+	// This forest contains only one plot node
+	// This plot node contains a Binary search tree 
+	// In this binary search tree we have all the characters at the leaf nodes
+
 	f = hftree(f);
 	if (f == NULL)
 	{
 		printf("Could not create Huffman Tree.\n");
 		return 3;
 	}
+
+	printf("Total no. of unique characters: %d\n", count);
 	// assigning every new character a path in Huffman tree (e.g. 110, 111, 110011, 110010)
 	c = compress(f->first->tree, 0, 0, c);
 	if (c == NULL)
@@ -191,7 +229,6 @@ int main(int argc, char* argv[])
 	compressed* node = c;
 
 	int bit = 0;
-
 	// writing Huffed file using huffman tree
 	while(ch = fgetc(ifp))
 	{
@@ -204,7 +241,7 @@ int main(int argc, char* argv[])
 			node = node->next;
 			if (node == NULL)
 			{
-				printf("Not found '%c (%d)' matching character in the Huffman Tree.\n", ch, (int)ch);
+				printf("Couldn't find '%c (%d)' matching character in the Huffman Tree.\n", ch, (int)ch);
 				break;
 			}
 		}
@@ -219,11 +256,30 @@ int main(int argc, char* argv[])
 		}
 	}
 
+	//------------Prints values for all the characters--------------
+	node = c;
+	while(node != NULL)
+	{
+		printf("%05d(%c) -> ", node->freq, node->ch);
+		for (int j=0; j<node->ith; j++)
+		{
+			if (node != NULL)
+			{
+				bit = (node->value & 1 << j) ? 1 : 0;
+				printf("%d", bit);
+			}
+		}
+		printf("\n");
+		node = node->next;
+	}
+	// -------------------------------------------------------------
+
 	// freeing every tree, forest, table
 	hfclose(hf);
 	rmforest(f);
 	free(table);
 	fclose(ifp);
+
 	return 0;
 }
 
